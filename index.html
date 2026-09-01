@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a1420">
+  <meta name="description" content="雨停以前 —— 一个关于雨、记忆与未说完的话的游戏">
+  <title>雨停以前</title>
+  <link rel="icon" href="assets/pieces/rain.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="backdrop"></canvas>
+  <canvas id="effects"></canvas>
+  <div class="vignette"></div>
+
+  <main class="app">
+    <!-- 顶部栏 -->
+    <header class="top">
+      <div class="brand-wrap">
+        <h1 class="brand">雨停以前</h1>
+        <span class="brand-sub">一场缓慢的消逝</span>
+      </div>
+      <button class="metal" id="mapButton" type="button">
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-map"></use></svg>
+        <span>章节</span>
+      </button>
+      <button class="metal" id="musicButton" type="button">
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-music"></use></svg>
+        <span>音乐</span>
+      </button>
+    </header>
+
+    <!-- 顶部 HUD 状态栏 -->
+    <section class="hud">
+      <div class="hud-chapter">
+        <div class="eyebrow" id="chapter">第一章 · 雨</div>
+        <h2 id="levelTitle">雨落在旧窗上</h2>
+      </div>
+      <div class="hud-goal">
+        <div class="hud-goal-top">
+          <span id="goalLabel">收集 雨滴</span>
+          <strong id="goalCount">0 / 20</strong>
+        </div>
+        <div class="bar goal-bar"><i id="goalBar"></i></div>
+      </div>
+      <div class="hud-moves">
+        <span class="eyebrow">剩余步数</span>
+        <strong id="moves">32</strong>
+      </div>
+    </section>
+
+    <!-- 主体网格 -->
+    <div class="game-grid">
+      <section class="panel board-panel" id="boardPanel">
+        <div class="canvas-wrap">
+          <canvas id="board"></canvas>
+          <canvas id="boardFx"></canvas>
+        </div>
+        <div class="hint" id="hint">点击或拖拽两个相邻元素交换位置</div>
+        <div class="stats">
+          <div class="stat"><span>得分</span><strong id="score">0000</strong></div>
+          <div class="stat"><span>连锁</span><strong id="combo">—</strong></div>
+          <div class="stat"><span>已消除</span><strong id="clears">0</strong></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="panel mood">
+          <div class="label">当前情绪</div>
+          <div class="mood-row">
+            <strong id="moodNum">100%</strong>
+            <span class="label" id="moodName">平静</span>
+          </div>
+          <div class="bar"><i id="moodBar"></i></div>
+          <p id="moodText">雨很轻。还能听见自己的呼吸。</p>
+          <div class="warmth-head"><span class="label">暖意</span><strong id="warmthCount">0 / 30</strong></div>
+          <div class="bar warmth-bar"><i id="warmthBar"></i></div>
+        </section>
+
+        <section class="panel character-panel">
+          <canvas id="character" tabindex="0" role="button" aria-label="安抚窗边的人"></canvas>
+          <div class="character-copy">
+            <div class="label">窗边的人</div>
+            <p id="characterText">雨还在下，像那天一样。</p>
+          </div>
+        </section>
+
+        <section class="panel narrative">
+          <div class="label">环境</div>
+          <p id="environmentText">远处的街灯亮了，在雨里晕开一团模糊的光。</p>
+        </section>
+
+        <section class="panel memory">
+          <div>
+            <div class="label">碎片记忆</div>
+            <small id="memorySummary">尚未拾起</small>
+          </div>
+          <button class="metal" id="memoryButton" type="button">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-book"></use></svg>
+            <span>查看</span>
+          </button>
+        </section>
+
+        <section class="panel comfort-tools">
+          <div class="label">雨具</div>
+          <div class="tool-list">
+            <button class="tool-button" id="itemHammer" type="button" data-item="hammer"><span>铁锤</span><strong id="itemHammerCount">1</strong></button>
+            <button class="tool-button" id="itemSwap" type="button" data-item="swap"><span>换位</span><strong id="itemSwapCount">1</strong></button>
+            <button class="tool-button" id="itemShuffle" type="button" data-item="shuffle"><span>洗牌</span><strong id="itemShuffleCount">1</strong></button>
+          </div>
+          <small id="itemHint">每章各有一次，不消耗步数</small>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <!-- 首页 -->
+  <section class="screen" id="homeScreen">
+    <div class="home">
+      <div class="home-copy">
+        <div class="eyebrow">一个关于雨、记忆与未说完的话的游戏</div>
+        <h1>雨停以前</h1>
+        <p>有些人离开以后，世界并没有立刻改变。只是雨落下来时，所有旧事又慢慢浮出水面。</p>
+        <button class="metal" id="homeStart" type="button">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-umbrella"></use></svg>
+          <span>翻开章节</span>
+        </button>
+        <div class="meta">5 段回忆 · 8 × 8 雨雾棋盘 · 建议戴上耳机</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 章节选择 -->
+  <section class="screen hidden" id="mapScreen">
+    <div class="card levels">
+      <div class="eyebrow">沿着回忆向前</div>
+      <h2>章节选择</h2>
+      <div class="level-list" id="levelList"></div>
+      <div class="levels-actions">
+        <button class="metal" id="closeMap" type="button">回到雨里</button>
+        <button class="metal" id="resetSave" type="button" title="清空本地存档，一切重新开始">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-reset"></use></svg>
+          <span>清空记忆</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 章节简介 -->
+  <section class="screen hidden" id="introScreen">
+    <div class="card">
+      <div class="eyebrow" id="introKicker"></div>
+      <h2 id="introTitle"></h2>
+      <p id="introText"></p>
+      <button class="metal" id="introStart" type="button">走进雨里</button>
+    </div>
+  </section>
+
+  <!-- 章节结算 -->
+  <section class="screen hidden" id="resultScreen">
+    <div class="card">
+      <div class="eyebrow" id="resultKicker"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultText"></p>
+      <button class="metal" id="resultNext" type="button"></button>
+    </div>
+  </section>
+
+  <!-- 回忆日志 -->
+  <section class="screen hidden" id="memoryScreen">
+    <div class="card modal">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">旧纸上的字迹</div>
+          <h2>回忆日志</h2>
+        </div>
+        <button class="metal" id="closeMemory" type="button">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-close"></use></svg>
+          <span>关闭</span>
+        </button>
+      </div>
+      <div id="entries"></div>
+    </div>
+  </section>
+
+  <!-- 音乐控制与曲库 -->
+  <section class="screen hidden" id="musicScreen">
+    <div class="card music-card">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">雨声之外</div>
+          <h2>音乐</h2>
+        </div>
+        <button class="metal" id="closeMusic" type="button">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-close"></use></svg>
+          <span>关闭</span>
+        </button>
+      </div>
+      <div class="music-now">
+        <div class="label">当前播放</div>
+        <strong id="musicTitle">尚未选择音乐</strong>
+        <span id="musicStatus">选择本地音频或加载音频直链后即可播放</span>
+      </div>
+      <div class="music-controls">
+        <button class="metal" id="musicPlay" type="button" disabled>
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-play"></use></svg>
+          <span>播放</span>
+        </button>
+        <button class="metal" id="musicPause" type="button" disabled>
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-pause"></use></svg>
+          <span>暂停</span>
+        </button>
+        <button class="metal" id="musicStop" type="button" disabled>
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-stop"></use></svg>
+          <span>停止</span>
+        </button>
+        <label class="volume-control" title="音乐音量">
+          <span class="label">音量</span>
+          <input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.35">
+        </label>
+      </div>
+      <div class="music-import">
+        <label class="file-picker metal">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-upload"></use></svg>
+          <span>选择本地音频</span>
+          <input id="musicFile" type="file" multiple accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.aac">
+        </label>
+        <button class="metal" id="musicFolderButton" type="button">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-folder"></use></svg>
+          <span>选择项目音乐文件夹</span>
+        </button>
+        <span class="folder-status" id="musicFolderStatus">未连接 music 文件夹</span>
+        <div class="url-picker">
+          <input id="musicUrl" type="url" placeholder="粘贴可播放的音频直链">
+          <button class="metal" id="musicLoadUrl" type="button">加载</button>
+        </div>
+      </div>
+      <div class="music-dropzone" id="musicDropzone" tabindex="0" role="button" aria-label="拖拽音频文件到此处，或按回车选择文件">
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-upload"></use></svg>
+        <span>将 MP3、WAV、FLAC 等音频拖到这里</span>
+        <small>支持一次添加多个文件</small>
+      </div>
+      <p class="music-note">网易云音乐、QQ 音乐等页面通常不提供可直接播放的音频地址。曲目卡片会打开官方页面；页面内播放支持本地文件或你有权使用的音频直链。</p>
+      <div class="label library-label">播放列表</div>
+      <div class="music-library" id="musicLibrary"></div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="board.js" defer></script>
+  <script src="renderers.js" defer></script>
+  <script src="audio.js" defer></script>
+  <script src="ui.js" defer></script>
+  <script src="music.js" defer></script>
+  <script src="game.js" defer></script>
+</body>
+</html>
