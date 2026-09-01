@@ -35,45 +35,30 @@ const MUSIC_LIBRARY = [
 
 const LOCAL_AUDIO_EXTENSIONS = new Set(["mp3", "wav", "flac", "ogg", "m4a", "aac", "opus", "webm"]);
 
-// manifest 无法通过 file:// 读取时，仍使用这份静态内置清单。
-function openProjectMusic() {
-  ["#homeScreen", "#mapScreen", "#introScreen", "#resultScreen", "#memoryScreen", "#musicScreen"].forEach(selector => {
-    const screen = document.querySelector(selector);
-    if (screen) screen.classList.toggle("hidden", selector !== "#musicScreen");
-  });
-  const audio = document.querySelector("#musicAudio");
-  if (!audio?.src) return;
-  const result = audio.play();
-  if (result?.catch) result.catch(() => {
-    const status = document.querySelector("#musicStatus");
-    if (status) status.textContent = "浏览器阻止了自动播放，请点击播放按钮";
-  });
-}
-
 const PROJECT_MUSIC_FALLBACK = [
   {
     "name": "王力宏-爱错.mp3",
     "path": "王力宏-爱错.mp3",
     "size": 9555788,
-    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E7%8E%8B%E5%8A%9B%E5%AE%8F-%E7%88%B1%E9%94%99.mp3"
+    "url": "https://media.githubusercontent.com/media/hebaodan177-blip/game/main/music/%E7%8E%8B%E5%8A%9B%E5%AE%8F-%E7%88%B1%E9%94%99.mp3"
   },
   {
     "name": "周杰伦-晴天.mp3",
     "path": "周杰伦-晴天.mp3",
     "size": 10792943,
-    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3"
+    "url": "https://media.githubusercontent.com/media/hebaodan177-blip/game/main/music/%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3"
   },
   {
     "name": "街道办GDC、欧阳耀莹-春娇与志明.mp3",
     "path": "街道办GDC、欧阳耀莹-春娇与志明.mp3",
     "size": 8202131,
-    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E8%A1%97%E9%81%93%E5%8A%9EGDC%E3%80%81%E6%AC%A7%E9%98%B3%E8%80%80%E8%8E%B9-%E6%98%A5%E5%A8%87%E4%B8%8E%E5%BF%97%E6%98%8E.mp3"
+    "url": "https://media.githubusercontent.com/media/hebaodan177-blip/game/main/music/%E8%A1%97%E9%81%93%E5%8A%9EGDC%E3%80%81%E6%AC%A7%E9%98%B3%E8%80%80%E8%8E%B9-%E6%98%A5%E5%A8%87%E4%B8%8E%E5%BF%97%E6%98%8E.mp3"
   },
   {
     "name": "梨冻紧、Wiz_H张子豪-罗生门（Follow）.mp3",
     "path": "梨冻紧、Wiz_H张子豪-罗生门（Follow）.mp3",
     "size": 9752735,
-    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E6%A2%A8%E5%86%BB%E7%B4%A7%E3%80%81Wiz_H%E5%BC%A0%E5%AD%90%E8%B1%AA-%E7%BD%97%E7%94%9F%E9%97%A8%EF%BC%88Follow%EF%BC%89.mp3"
+    "url": "https://media.githubusercontent.com/media/hebaodan177-blip/game/main/music/%E6%A2%A8%E5%86%BB%E7%B4%A7%E3%80%81Wiz_H%E5%BC%A0%E5%AD%90%E8%B1%AA-%E7%BD%97%E7%94%9F%E9%97%A8%EF%BC%88Follow%EF%BC%89.mp3"
   }
 ];
 
@@ -176,9 +161,6 @@ class MusicManager {
       });
       this.play();
     };
-    document.addEventListener("click", event => {
-      if (event.target.closest("#musicButton")) openMusicScreen();
-    });
     this.$("#musicPlay").onclick = () => this.play();
     this.$("#musicPause").onclick = () => this.pause();
     this.$("#musicStop").onclick = () => this.stop();
@@ -460,7 +442,8 @@ class MusicManager {
     const result = this.audio.play();
     if (result && result.catch) result.catch(error => {
       if (error?.name === "NotAllowedError") this.update("浏览器阻止了自动播放，请点击播放按钮");
-      else this.update("默认音乐加载失败，请检查音乐地址或更换曲目");
+      else if (error?.name === "NotSupportedError") this.handleAudioError();
+      else this.update("音乐播放失败，请检查网络、音频格式或更换曲目");
     });
   }
 
