@@ -391,6 +391,15 @@ body.stage-melancholy { filter: saturate(.75) brightness(.84); }
   backdrop-filter: blur(10px);
   transition: opacity .45s, visibility .45s;
 }
+#musicScreen {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  align-items: start;
+}
+#musicScreen .music-card {
+  margin: 24px auto;
+}
 .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
 .card {
@@ -554,6 +563,7 @@ body.stage-melancholy { filter: saturate(.75) brightness(.84); }
   .level-list { grid-template-columns: repeat(5, minmax(52px, 1fr)); overflow: auto; }
   .levels { padding: 20px; }
   .screen { padding: 0; }
+  #musicScreen .music-card { margin: 0 auto; }
   .card, .modal { width: 100%; min-height: 100%; max-height: none; border-radius: 0; }
   .stats { font-size: .85rem; }
   .tool-list { gap: 5px; }
