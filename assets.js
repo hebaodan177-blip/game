@@ -13,13 +13,15 @@ const Assets = {
   icons: "assets/icons.svg",
   // 背景图（null 或加载失败时使用程序化雨夜背景）
   background: "assets/backdrop.png",
-  // 棋子图片：null 表示该类型使用程序化 Canvas 绘制
+  // 棋子图片：null 表示该类型使用程序化 Canvas 绘制。
+  // 视觉升级后统一采用高精度的程序化材质，保证各设备表现一致，
+  // 因此不再加载外部棋子 SVG（保留键位结构以兼容加载逻辑）。
   pieces: {
-    rain: "assets/pieces/rain.svg",
-    leaf: "assets/pieces/leaf.svg",
-    cloud: "assets/pieces/cloud.svg",
-    moon: "assets/pieces/moon.svg",
-    mist: "assets/pieces/mist.svg"
+    rain: null,
+    leaf: null,
+    cloud: null,
+    moon: null,
+    mist: null
   }
 };
 

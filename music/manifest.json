@@ -2,6 +2,11 @@
   "version": 1,
   "tracks": [
     {
+      "name": "opening.mp3",
+      "path": "opening.mp3",
+      "size": 1797896
+    },
+    {
       "name": "王力宏-爱错.mp3",
       "path": "王力宏-爱错.mp3",
       "size": 9555788,

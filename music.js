@@ -437,6 +437,8 @@ class MusicManager {
   }
 
   play() {
+    // 用户主动播放背景音乐时，先停止开场音乐，避免两首叠加。
+    if (globalThis.game?.opening) globalThis.game.opening.stop();
     if (!this.audio.src) return this.update("请先选择或加载音频");
     this.update("正在加载音乐...");
     const result = this.audio.play();

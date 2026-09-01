@@ -9,6 +9,7 @@ class Game {
     this.renderer = new BoardRenderer(this.board, this.particles, pieceImages);
     this.character = new CharacterRenderer();
     this.audio = new AudioManager();
+    this.opening = new OpeningMusic();
     this.ui = new UIManager();
     this.music = new MusicManager();
     this.text = new TextManager();
@@ -88,6 +89,7 @@ class Game {
     this.ui.$("#memoryButton").onclick = () => this.memories();
     this.ui.$("#closeMemory").onclick = () => this.ui.hide("#memoryScreen");
     this.ui.$("#musicButton").onclick = () => {
+      this.opening.stop();
       this.ui.show("#musicScreen");
       if (this.music.currentTrack) this.music.play();
     };
@@ -257,7 +259,7 @@ class Game {
     c.setTransform(d, 0, 0, d, 0, 0);
     c.translate(17, 17);
     c.scale(.65, .65);
-    this.renderer.drawPiece.call({ ctx: c, images: this.renderer.images }, type, 17, 0);
+    this.renderer.paintPiece(c, type, 17, 0);
   }
 
   intro(i) {
@@ -274,6 +276,8 @@ class Game {
 
   start() {
     this.started = true;
+    this.opening.stop();
+    this.audio.unlock();
     this.audio.start();
     this.applyStage(this.emotion.stage);
       this.ui.allHide();
@@ -553,6 +557,8 @@ class Game {
   ResourceLoader.loadFonts();
   try {
     globalThis.game = new Game();
+    // 开场纯音乐随页面加载启动：渐进铺陈，首次交互即自然响起。
+    globalThis.game.opening.play();
     // 图片资源在后台增强渲染，加载失败时保留 Canvas 绘制。
     ResourceLoader.loadBackdrop();
     ResourceLoader.loadPieces().then(images => {
@@ -566,3 +572,5 @@ class Game {
     if (toast) toast.textContent = "游戏初始化失败，请刷新页面重试";
   }
 })();
+
+
