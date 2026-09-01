@@ -35,20 +35,76 @@ const MUSIC_LIBRARY = [
 
 const LOCAL_AUDIO_EXTENSIONS = new Set(["mp3", "wav", "flac", "ogg", "m4a", "aac", "opus", "webm"]);
 
+// manifest 无法通过 file:// 读取时，仍使用这份静态内置清单。
+function openProjectMusic() {
+  ["#homeScreen", "#mapScreen", "#introScreen", "#resultScreen", "#memoryScreen", "#musicScreen"].forEach(selector => {
+    const screen = document.querySelector(selector);
+    if (screen) screen.classList.toggle("hidden", selector !== "#musicScreen");
+  });
+  const audio = document.querySelector("#musicAudio");
+  if (!audio?.src) return;
+  const result = audio.play();
+  if (result?.catch) result.catch(() => {
+    const status = document.querySelector("#musicStatus");
+    if (status) status.textContent = "浏览器阻止了自动播放，请点击播放按钮";
+  });
+}
+
+const PROJECT_MUSIC_FALLBACK = [
+  {
+    "name": "王力宏-爱错.mp3",
+    "path": "王力宏-爱错.mp3",
+    "size": 9555788,
+    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E7%8E%8B%E5%8A%9B%E5%AE%8F-%E7%88%B1%E9%94%99.mp3"
+  },
+  {
+    "name": "周杰伦-晴天.mp3",
+    "path": "周杰伦-晴天.mp3",
+    "size": 10792943,
+    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3"
+  },
+  {
+    "name": "街道办GDC、欧阳耀莹-春娇与志明.mp3",
+    "path": "街道办GDC、欧阳耀莹-春娇与志明.mp3",
+    "size": 8202131,
+    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E8%A1%97%E9%81%93%E5%8A%9EGDC%E3%80%81%E6%AC%A7%E9%98%B3%E8%80%80%E8%8E%B9-%E6%98%A5%E5%A8%87%E4%B8%8E%E5%BF%97%E6%98%8E.mp3"
+  },
+  {
+    "name": "梨冻紧、Wiz_H张子豪-罗生门（Follow）.mp3",
+    "path": "梨冻紧、Wiz_H张子豪-罗生门（Follow）.mp3",
+    "size": 9752735,
+    "url": "https://raw.githubusercontent.com/hebaodan177-blip/game/main/music/%E6%A2%A8%E5%86%BB%E7%B4%A7%E3%80%81Wiz_H%E5%BC%A0%E5%AD%90%E8%B1%AA-%E7%BD%97%E7%94%9F%E9%97%A8%EF%BC%88Follow%EF%BC%89.mp3"
+  }
+];
+
 class MusicManager {
   constructor() {
-    this.audio = document.createElement("audio");
+    this.audio = document.querySelector("#musicAudio") || document.createElement("audio");
     this.audio.preload = "metadata";
     this.audio.volume = .35;
+    this.audio.controls = false;
+    this.audio.setAttribute("aria-label", "项目背景音乐");
+    if (!this.audio.isConnected) document.body.appendChild(this.audio);
     this.current = null;
-    this.localTracks = [];
+    this.localTracks = PROJECT_MUSIC_FALLBACK.map((entry, index) => ({
+      id: "music-fallback-" + index,
+      name: entry.name,
+      size: entry.size,
+      lastModified: 0,
+      url: new URL("music/" + entry.path, document.baseURI).href,
+      fallbackUrl: entry.url,
+      saved: true,
+      directory: true
+    }));
     this.currentTrack = null;
     this.musicDirectory = null;
     this.pendingFileNames = new Set();
+    this.manifestReady = null;
     this.$ = selector => document.querySelector(selector);
     this.renderLibrary();
     this.bind();
-    this.update();
+    this.selectTrack(this.localTracks[0]);
+    this.update("默认音乐已载入，请点击播放");
     this.loadMusicManifest();
   }
 
@@ -113,6 +169,16 @@ class MusicManager {
   }
 
   bind() {
+    const openMusicScreen = () => {
+      ["#homeScreen", "#mapScreen", "#introScreen", "#resultScreen", "#memoryScreen", "#musicScreen"].forEach(selector => {
+        const screen = this.$(selector);
+        if (screen) screen.classList.toggle("hidden", selector !== "#musicScreen");
+      });
+      this.play();
+    };
+    document.addEventListener("click", event => {
+      if (event.target.closest("#musicButton")) openMusicScreen();
+    });
     this.$("#musicPlay").onclick = () => this.play();
     this.$("#musicPause").onclick = () => this.pause();
     this.$("#musicStop").onclick = () => this.stop();
@@ -153,7 +219,7 @@ class MusicManager {
     this.audio.addEventListener("play", () => this.update("播放中"));
     this.audio.addEventListener("pause", () => this.update(this.audio.currentTime ? "已暂停" : "已停止"));
     this.audio.addEventListener("ended", () => this.update("播放结束"));
-    this.audio.addEventListener("error", () => this.update("音频无法播放，请检查地址或权限"));
+    this.audio.addEventListener("error", () => this.handleAudioError());
   }
 
   addFiles(fileList) {
@@ -203,6 +269,7 @@ class MusicManager {
           size: Number(entry.size) || 0,
           lastModified: Number(entry.lastModified) || 0,
           url: new URL(entry.path || entry.name, manifestUrl).href,
+          fallbackUrl: typeof entry.url === "string" ? entry.url : null,
           saved: true,
           directory: true
         });
@@ -355,11 +422,28 @@ class MusicManager {
   }
 
   selectTrack(track, autoplay = false) {
-    this.audio.src = track.url;
+    if (!track?.url) return this.update("默认音乐地址无效，请检查音乐清单");
+    track.fallbackUsed = false;
     this.currentTrack = track;
     this.current = track.name;
-    this.update("本地音频已载入");
+    this.audio.src = track.url;
+    this.audio.load();
+    this.update("项目音乐已载入");
     if (autoplay) this.play();
+  }
+
+  handleAudioError() {
+    const track = this.currentTrack;
+    if (track?.fallbackUrl && !track.fallbackUsed && this.audio.src !== track.fallbackUrl) {
+      track.fallbackUsed = true;
+      this.audio.src = track.fallbackUrl;
+      this.audio.load();
+      this.update("正在切换远程音乐地址...");
+      return;
+    }
+    const code = this.audio.error?.code;
+    const reason = code === 1 ? "加载被取消" : code === 2 ? "网络加载失败" : code === 3 ? "音频解码失败" : code === 4 ? "格式或地址不受支持" : "音频无法访问";
+    this.update(reason + "，请检查音乐地址或选择其他曲目");
   }
 
   loadUrl(url) {
@@ -372,8 +456,12 @@ class MusicManager {
 
   play() {
     if (!this.audio.src) return this.update("请先选择或加载音频");
+    this.update("正在加载音乐...");
     const result = this.audio.play();
-    if (result && result.catch) result.catch(() => this.update("浏览器阻止了播放，请再次点击播放"));
+    if (result && result.catch) result.catch(error => {
+      if (error?.name === "NotAllowedError") this.update("浏览器阻止了自动播放，请点击播放按钮");
+      else this.update("默认音乐加载失败，请检查音乐地址或更换曲目");
+    });
   }
 
   pause() { if (this.audio.src) this.audio.pause(); }

@@ -25,7 +25,7 @@
         <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-map"></use></svg>
         <span>章节</span>
       </button>
-      <button class="metal" id="musicButton" type="button">
+      <button class="metal" id="musicButton" type="button" onclick="openProjectMusic()">
         <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-music"></use></svg>
         <span>音乐</span>
       </button>
@@ -249,13 +249,14 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets.js" defer></script>
-  <script src="data.js" defer></script>
-  <script src="board.js" defer></script>
-  <script src="renderers.js" defer></script>
-  <script src="audio.js" defer></script>
-  <script src="ui.js" defer></script>
-  <script src="music.js" defer></script>
-  <script src="game.js" defer></script>
+  <!-- 保持依赖顺序，适配直接打开和 GitHub Pages 的静态加载。 -->
+  <script src="assets.js"></script>
+  <script src="data.js"></script>
+  <script src="board.js"></script>
+  <script src="renderers.js"></script>
+  <script src="audio.js"></script>
+  <script src="ui.js"></script>
+  <script src="music.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>

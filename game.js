@@ -87,7 +87,10 @@ class Game {
     this.ui.$("#resultNext").onclick = () => this.afterResult();
     this.ui.$("#memoryButton").onclick = () => this.memories();
     this.ui.$("#closeMemory").onclick = () => this.ui.hide("#memoryScreen");
-    this.ui.$("#musicButton").onclick = () => this.ui.show("#musicScreen");
+    this.ui.$("#musicButton").onclick = () => {
+      this.ui.show("#musicScreen");
+      if (this.music.currentTrack) this.music.play();
+    };
     this.ui.$("#closeMusic").onclick = () => this.ui.hide("#musicScreen");
     ["hammer", "swap", "shuffle"].forEach(item => {
       const button = this.optional(`#item${item[0].toUpperCase()}${item.slice(1)}`);
@@ -548,7 +551,18 @@ class Game {
 
 (async () => {
   ResourceLoader.loadFonts();
-  await ResourceLoader.loadBackdrop();
-  const pieceImages = await ResourceLoader.loadPieces();
-  globalThis.game = new Game(pieceImages);
+  try {
+    globalThis.game = new Game();
+    // 图片资源在后台增强渲染，加载失败时保留 Canvas 绘制。
+    ResourceLoader.loadBackdrop();
+    ResourceLoader.loadPieces().then(images => {
+      if (globalThis.game?.renderer) globalThis.game.renderer.images = images;
+    });
+  } catch (error) {
+    console.error("游戏初始化失败", error);
+    const status = document.querySelector("#musicStatus");
+    if (status) status.textContent = "游戏初始化失败，请刷新页面重试";
+    const toast = document.querySelector("#toast");
+    if (toast) toast.textContent = "游戏初始化失败，请刷新页面重试";
+  }
 })();
